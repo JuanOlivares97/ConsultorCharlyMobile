@@ -14,11 +14,13 @@ const App = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator>
-        <Stack.Screen name="WelcomeView"  component={WelcomeView} />
+        <Stack.Screen options={{ headerShown: false }} name="WelcomeView"  component={WelcomeView} />
         <Stack.Screen name="ScannerView" component={ScannerView} />
       </Stack.Navigator>
     </NavigationContainer>
   );
 };
+
+
 
 export default App;

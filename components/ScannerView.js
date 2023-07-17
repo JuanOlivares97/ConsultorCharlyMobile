@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
-import { Camera } from 'expo-camera';
-import Icon from 'react-native-vector-icons/FontAwesome';
-import { useIsFocused } from '@react-navigation/native';
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text, TouchableOpacity, Modal, StyleSheet } from "react-native";
+import { Camera } from "expo-camera";
+import Icon from "react-native-vector-icons/FontAwesome";
+import { useIsFocused } from "@react-navigation/native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 Icon.loadFont();
 
@@ -11,7 +12,7 @@ const ScannerView = () => {
   const [scanned, setScanned] = useState(false);
   const [productModalVisible, setProductModalVisible] = useState(false);
   const [cartModalVisible, setCartModalVisible] = useState(false);
-  const [barcodeData, setBarcodeData] = useState('');
+  const [barcodeData, setBarcodeData] = useState("");
   const [productData, setProductData] = useState(null);
   const [cartItems, setCartItems] = useState([]);
   const isFocused = useIsFocused();
@@ -20,7 +21,7 @@ const ScannerView = () => {
   useEffect(() => {
     (async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
+      setHasPermission(status === "granted");
     })();
   }, []);
 
@@ -28,11 +29,33 @@ const ScannerView = () => {
     if (isFocused) {
       setScanned(false);
       setProductModalVisible(false);
-      setCartModalVisible(true);
-      setBarcodeData('');
+      setCartModalVisible(false);
+      setBarcodeData("");
       setProductData(null);
     }
   }, [isFocused]);
+
+
+  const saveCartItems = async (items) => {
+    try {
+      const jsonValue = JSON.stringify(items);
+      await AsyncStorage.setItem('cartItems', jsonValue);
+    } catch (error) {
+      console.error('Error al guardar los datos del carrito:', error);
+    }
+  };
+
+  const loadCartItems = async () => {
+    try {
+      const jsonValue = await AsyncStorage.getItem('cartItems');
+      const items = JSON.parse(jsonValue);
+      if (items) {
+        setCartItems(items);
+      }
+    } catch (error) {
+      console.error('Error al cargar los datos del carrito:', error);
+    }
+  };
 
   const handleBarCodeScanned = async ({ data }) => {
     setScanned(true);
@@ -40,7 +63,9 @@ const ScannerView = () => {
     setProductModalVisible(true);
 
     try {
-      const response = await fetch(`http://lowedev.cl/ConsultorCharlyAPI.php?code=${data} `);
+      const response = await fetch(
+        `http://lowedev.cl/ConsultorCharlyAPI.php?code=${data} `
+      );
       const json = await response.json();
       setProductData(json);
     } catch (error) {
@@ -55,7 +80,7 @@ const ScannerView = () => {
   const handleRescan = () => {
     setScanned(false);
     setProductModalVisible(false);
-    setBarcodeData('');
+    setBarcodeData("");
     setProductData(null);
   };
 
@@ -63,7 +88,9 @@ const ScannerView = () => {
     if (productData) {
       const { nombre, precio } = productData;
       const newItem = { nombre, precio, cantidad: 1 };
-      setCartItems([...cartItems, newItem]);
+      const updatedCartItems = [...cartItems, newItem];
+      setCartItems(updatedCartItems);
+      saveCartItems(updatedCartItems);
     }
     setProductModalVisible(false);
   };
@@ -94,6 +121,7 @@ const ScannerView = () => {
     const updatedCartItems = [...cartItems];
     updatedCartItems.splice(index, 1);
     setCartItems(updatedCartItems);
+    saveCartItems(updatedCartItems);
   };
 
   const getTotal = () => {
@@ -142,23 +170,60 @@ const ScannerView = () => {
         <Icon name="shopping-cart" size={24} color="black" />
       </TouchableOpacity>
 
-      <Modal visible={cartModalVisible} animationType="slide" transparent={true}>
+      <Modal
+        visible={cartModalVisible}
+        animationType="slide"
+        transparent={true}
+      >
         <View style={styles.cartModal}>
           <Text style={styles.cartTitle}>Carrito de Compras</Text>
-          
-            <View style={styles.Product}>
-              
-            </View>
 
-          <View style={styles.totalContainer}>
-            <Text style={styles.totalText}>Total de la compra: {getTotal()}</Text>
+          {cartItems.map((item, index) => (
+          <View key={item.codigo} style={styles.Product}>
+            <Text style={styles.NombreProducto}>{item.nombre}</Text>
+            <View style={styles.DivPrecioProducto}>
+              <Text style={styles.TextPrecio}>Precio unitario:</Text>
+              <Text style={styles.PrecioProducto}>${item.precio}</Text>
+            </View>
+            <View style={styles.quantityContainer}>
+              <TouchableOpacity
+                style={styles.quantityButton}
+                onPress={() => handleDecrementQuantity(index)}
+              >
+                <Text style={styles.quantityButtonText}>-</Text>
+              </TouchableOpacity>
+              <Text style={styles.quantityText}>{item.cantidad}</Text>
+              <TouchableOpacity
+                style={styles.quantityButton}
+                onPress={() => handleIncrementQuantity(index)}
+              >
+                <Text style={styles.quantityButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.DivPrecioProducto}>
+              <Text style={styles.TextSubtotal}>Subtotal:</Text>
+              <Text style={styles.Subtotal}>${item.precio*item.cantidad}</Text>  
+            </View>
+            <TouchableOpacity
+                style={styles.removeButton}
+                onPress={() => handleRemoveItem(index)}
+              >
+                <Text style={styles.removeButtonText}>Eliminar</Text>
+              </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.closeButton} onPress={handleCloseCart}>
-            <Text style={styles.closeButtonText}>Cerrar</Text>
+          ))}
+          <View style={styles.totalContainer}>
+            <Text style={styles.totalText}>Total de la compra: ${getTotal()}</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={handleCloseCart}
+          >
+            <Icon name="times" size={24} color="black" />
+
           </TouchableOpacity>
         </View>
       </Modal>
-
     </View>
   );
 };
@@ -166,24 +231,24 @@ const ScannerView = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   camera: {
     height: 300,
-    width: '90%',
+    width: "90%",
     aspectRatio: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   productName: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginTop: 10,
   },
   productPrice: {
@@ -194,7 +259,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   button: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: "#e0e0e0",
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,
@@ -202,29 +267,108 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: 'black',
+    fontWeight: "bold",
+    color: "black",
   },
   cartButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 20,
     right: 20,
   },
   cartModal: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    alignItems:'center'
+    backgroundColor: "#ffffff",
+    alignItems: "center",
+    gap:10
   },
   cartTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 20,
-    color: 'black',
+    color: "black",
+    marginTop:10
   },
-  Product:{
+  Product: {
     height: 225,
-    backgroundColor:'red',
-    width: '95%',
+    backgroundColor: "blue",
+    width: "95%",
+    alignItems: "center",
+    borderRadius: 20,
+  },
+  NombreProducto: {
+    color: "white",
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 30,
+  },
+  PrecioProducto: {
+    color: "yellow",
+    fontSize: 30,
+  },
+  Cantidad: {},
+  DivPrecioProducto: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    width: "100%",
+    marginLeft: 50,
+    marginBottom: 20,
+  },
+  TextPrecio: {
+    color: "white",
+    fontSize: 20,
+  },
+  quantityContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 20,
+    marginBottom:20
+  },
+  quantityButton: {
+    backgroundColor: "white",
+    width: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 8,
+  },
+  quantityButtonText: {
+    color: "black",
+    fontWeight: "bold",
+  },
+  quantityText: {
+    color: "white",
+    fontSize: 15,
+  },
+  TextSubtotal: {
+    color: "white",
+    fontSize: 20,
+    marginRight:55
+  },
+  Subtotal: {
+    color: "yellow",
+    fontSize: 30,
+  },
+  totalContainer:{
+    position:'absolute',
+    bottom:0,
+    width:'100%',
+    backgroundColor:'blue',
+    justifyContent:'center',
+    alignItems:'center',
+    height:40
+  },
+  closeButton:{
+    position:'absolute',
+    top:17,
+    right:10
+  },
+  totalText:{
+      color:'white'
+  },
+  removeButtonText:{
+    marginTop:-20,
+    color:'red'
   }
 });
 
