@@ -15,7 +15,7 @@ const App = () => {
     <NavigationContainer>
       <Stack.Navigator>
         <Stack.Screen options={{ headerShown: false }} name="WelcomeView"  component={WelcomeView} />
-        <Stack.Screen name="ScannerView" component={ScannerView} />
+        <Stack.Screen options={{ headerShown: false }} name="ScannerView" component={ScannerView} />
       </Stack.Navigator>
     </NavigationContainer>
   );

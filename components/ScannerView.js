@@ -166,7 +166,7 @@ const ScannerView = () => {
           </View>
         </View>
       </Modal>
-      <TouchableOpacity style={styles.cartButton} onPress={handleOpenCart}>
+      <TouchableOpacity style={styles. } onPress={handleOpenCart}>
         <Icon name="shopping-cart" size={24} color="black" />
       </TouchableOpacity>
 
