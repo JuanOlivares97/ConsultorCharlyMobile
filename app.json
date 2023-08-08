@@ -4,7 +4,7 @@
     "slug": "ConsultorCharly",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/supercharly-logo.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash.png",
@@ -18,9 +18,17 @@
       "permissions": [
         "CAMERA"
       ],
+      
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
+      },
+      "package": "com.zlowed.ConsultorCharly",
+      "buildType": "apk"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "1f911877-7de9-4b57-94a5-cfed493363c7"
       }
     }
   }
